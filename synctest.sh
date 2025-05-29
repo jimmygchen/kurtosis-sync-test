@@ -91,12 +91,20 @@ echo "$assertoor_config"
 echo "=== Debug: End raw config ==="
 
 echo "=== Debug: Trying yq query ==="
-echo "$assertoor_config" | yq -r '.globalVars | (.clientPairNames - .validatorPairNames)[]'
+echo "$assertoor_config" | yq -r '
+  .globalVars as $g |
+  $g.clientPairNames[] |
+  select(. as $item | $g.validatorPairNames | index($item) | not)
+'
 echo "=== Debug: End yq query ==="
 
 non_validating_pairs=$(
     echo "$assertoor_config" | 
-    yq -r '.globalVars | (.clientPairNames - .validatorPairNames)[]' 2>/dev/null |
+    yq -r '
+      .globalVars as $g |
+      $g.clientPairNames[] |
+      select(. as $item | $g.validatorPairNames | index($item) | not)
+    ' 2>/dev/null |
     while IFS= read -r client ; do
         if [ ! -z "$client" ]; then
             echo "=== Debug: Processing client: $client ==="
